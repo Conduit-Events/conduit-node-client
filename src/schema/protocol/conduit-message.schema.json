@@ -1,0 +1,37 @@
+{
+  "$id": "conduit-message.v1.0",
+  "title": "Conduit Message",
+  "type": "object",
+  "required": ["meta", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "type",
+        "version",
+        "streamId",
+        "correlationId",
+        "timestamp",
+        "source"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string" },
+        "kind": { "type": "string", "enum": ["event", "command"] },
+        "type": { "type": "string" },
+        "version": { "type": "string" },
+        "streamId": { "type": "string" },
+        "correlationId": { "type": "string" },
+        "causationId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "source": { "type": "string" }
+      }
+    },
+    "data": {
+      "type": "object"
+    }
+  }
+}

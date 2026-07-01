@@ -1,0 +1,23 @@
+{
+  "name": "conduit-node-client",
+  "version": "1.0.0",
+  "description": "A client for conduit, a multi-language event driven architecture",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "mocha \"test/**/*.test.js\""
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
+    "amqplib": "^2.0.1",
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "chai": "^6.2.2",
+    "eslint": "^10.5.0",
+    "mocha": "^11.7.6"
+  }
+}
