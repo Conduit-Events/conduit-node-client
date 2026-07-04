@@ -1,17 +1,17 @@
 export function configureRabbitMqTransport(config = {}) {
   const namespace = config.namespace ?? "default";
-  const serviceName = config.serviceName;
+  const service = config.service;
 
   const exchange = config.exchange ?? `conduit.${namespace}.events`;
 
   const queue = normalizeQueueInput(config.queue);
 
   const queueName =
-    queue.name ?? (serviceName ? `${namespace}.${serviceName}` : undefined);
+    queue.name ?? (service ? `${namespace}.${service}` : undefined);
 
   return {
     namespace,
-    serviceName,
+    service,
 
     connectionName: config.connectionName ?? "main",
     url: config.url,
@@ -40,7 +40,7 @@ export function configureRabbitMqQueue(baseConfig, queueInput = {}) {
 
   if (!name) {
     throw new Error(
-      "RabbitMQ queue name is required. Provide serviceName, queue.name, or subscribe queue.name.",
+      "RabbitMQ queue name is required. Provide service, queue.name, or subscribe queue.name.",
     );
   }
 

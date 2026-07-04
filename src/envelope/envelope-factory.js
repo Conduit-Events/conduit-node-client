@@ -41,7 +41,7 @@ export class EnvelopeFactory {
 
     if (!meta.kind) throw new Error("Envelope kind is required");
     if (!meta.type) throw new Error("Envelope type is required");
-    if (!meta.streamId) throw new Error("Envelope streamId is required");
+    // if (!meta.streamId) throw new Error("Envelope streamId is required");
     if (!source) throw new Error("Envelope source is required");
 
     if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -54,6 +54,7 @@ export class EnvelopeFactory {
         id: this._idGenerator(),
         version,
         source,
+        streamId: meta.streamId ?? this._idGenerator(),
         correlationId: meta.correlationId ?? this._idGenerator(),
         timestamp: this._clock(),
       },

@@ -1,6 +1,6 @@
-import EnvelopeFactory from "../envelope/envelope-factory.js";
-import SchemaValidator from "../schema/schema-validator.js";
-import { RabbitMqTransport } from "../transports/rabbitmq/rabbitmq-transport.js";
+import { EnvelopeFactory } from "../envelope/envelope-factory.js";
+import { SchemaValidator } from "../schema/schema-validator.js";
+import { RabbitMqTransport } from "../transports/rabbitMQ/rabbitmq-transport.js";
 
 const DEFAULT_NAMESPACE = "default";
 
@@ -9,13 +9,13 @@ export default class Client {
 
   constructor(config = {}) {
     const namespace = config.namespace ?? DEFAULT_NAMESPACE;
-    const serviceName = config.serviceName;
-    const source = config.source ?? serviceName;
+    const service = config.service;
+    const source = config.source ?? service;
 
     this._config = {
       ...config,
       namespace,
-      serviceName,
+      service,
       source,
     };
 
@@ -24,7 +24,7 @@ export default class Client {
       new RabbitMqTransport({
         ...(config.rabbitmq ?? {}),
         namespace,
-        serviceName,
+        service,
       });
 
     this.envelopes = config.envelopes ?? new EnvelopeFactory(this._config);
@@ -36,13 +36,15 @@ export default class Client {
     return new this(...args);
   }
 
-  async connect() {
+  async start() {
     await this.transport.connect();
+    this._started = true;
     return this;
   }
 
-  async disconnect(options = {}) {
+  async stop(options = {}) {
     await this.transport.disconnect(options);
+    this._started = false;
     return this;
   }
 
@@ -59,11 +61,8 @@ export default class Client {
 
     return this.transport.subscribe(
       type,
-      async (rawMessage, transportContext = {}) => {
-        const message = this.envelopes.parse(rawMessage);
-
+      async (message, transportContext = {}) => {
         this.validator.validate(message);
-
         const context = this.#createHandlerContext(message, transportContext);
 
         return handler(message, context);
@@ -72,14 +71,28 @@ export default class Client {
     );
   }
 
-  async #publish(kind, type, data, options = {}) {
-    const message = this.envelopes.create({
-      kind,
-      type,
-      data,
-      ...options,
-    });
+  #assertStarted() {
+    if (!this._started) {
+      throw new Error(`Client must be started before it can broadcast events.`);
+    }
+  }
 
+  #assertCanPublish(type) {
+    if (!type) {
+      throw new Error("Client emit requires a type");
+    }
+  }
+  async #publish(kind, type, data, options = {}) {
+    this.#assertStarted();
+    this.#assertCanPublish(type);
+    const message = this.envelopes.create(
+      {
+        kind,
+        type,
+        ...options,
+      },
+      data,
+    );
     this.validator.validate(message);
 
     return this.transport.publish(message, {
@@ -88,7 +101,6 @@ export default class Client {
       headers: options.headers,
     });
   }
-
   #createHandlerContext(message, transportContext = {}) {
     return {
       ...transportContext,
@@ -133,9 +145,9 @@ export default class Client {
       throw new Error("Client subscribe requires a handler function");
     }
 
-    if (!this._config.serviceName && !options.queue?.name) {
+    if (!this._config.service && !options.queue?.name) {
       throw new Error(
-        "Client subscribe requires config.serviceName or options.queue.name. This prevents accidental queue-name collisions.",
+        "Client subscribe requires config.service or options.queue.name. This prevents accidental queue-name collisions.",
       );
     }
   }
