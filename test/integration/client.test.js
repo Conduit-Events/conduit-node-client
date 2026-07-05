@@ -69,24 +69,22 @@ function createTestId() {
 }
 describe("Client", function () {
   this.timeout(10000);
-
+  let publisher;
   let serviceA;
   let serviceB;
 
   afterEach(async function () {
     await Promise.allSettled([
-      serviceA?.stop?.({ closeConnection: true }),
-      serviceB?.stop?.({ closeConnection: true }),
+      serviceA?.stop?.(),
+      serviceB?.stop?.(),
+      publisher?.stop?.(),
     ]);
 
-    await RabbitMqConnectionRegistry.closeAll().catch(() => {});
+    await RabbitMqConnectionRegistry.closeAll();
 
+    publisher = null;
     serviceA = null;
     serviceB = null;
-  });
-
-  afterEach(async function () {
-    await Promise.allSettled([serviceA?.stop?.(), serviceB?.stop?.()]);
   });
 
   it("two clients can receive each other's messages", async function () {
@@ -155,7 +153,7 @@ describe("Client", function () {
     expect(messageFromA.meta.source).to.equal("service-a");
   });
 
-  it.only("validates typed event data before publishing and receiving", async function () {
+  it("validates typed event data before publishing and receiving", async function () {
     const namespace = createTestId();
 
     const schemas = {
@@ -267,5 +265,123 @@ describe("Client", function () {
     });
 
     expect(invalidServiceBError.message).to.match(/schema|valid|validation/i);
+  });
+
+  it("delivers the same event to multiple handlers on one service and to other subscribed services", async function () {
+    const namespace = createTestId();
+    const eventType = "shared.message-sent";
+
+    publisher = Client.create({
+      namespace,
+      service: "publisher-service",
+      rabbitmq: {
+        url: RABBITMQ_URL,
+        connectionName: `${namespace}-publisher-service`,
+      },
+    });
+
+    serviceA = Client.create({
+      namespace,
+      service: "service-a",
+      rabbitmq: {
+        url: RABBITMQ_URL,
+        connectionName: `${namespace}-service-a`,
+      },
+    });
+
+    serviceB = Client.create({
+      namespace,
+      service: "service-b",
+      rabbitmq: {
+        url: RABBITMQ_URL,
+        connectionName: `${namespace}-service-b`,
+      },
+    });
+
+    const serviceAFirstHandler = waitForMessage(
+      "service-a first handler received shared.message-sent",
+    );
+
+    const serviceASecondHandler = waitForMessage(
+      "service-a second handler received shared.message-sent",
+    );
+
+    const serviceBHandler = waitForMessage(
+      "service-b handler received shared.message-sent",
+    );
+
+    await publisher.start();
+    await serviceA.start();
+    await serviceB.start();
+
+    await serviceA.on(eventType, async (message, ctx) => {
+      serviceAFirstHandler.resolve({
+        message,
+        routingKey: ctx.routingKey,
+      });
+    });
+
+    await serviceA.on(eventType, async (message, ctx) => {
+      serviceASecondHandler.resolve({
+        message,
+        routingKey: ctx.routingKey,
+      });
+    });
+
+    await serviceB.on(eventType, async (message, ctx) => {
+      serviceBHandler.resolve({
+        message,
+        routingKey: ctx.routingKey,
+      });
+    });
+
+    await publisher.emit(eventType, {
+      text: "Hello to everyone",
+    });
+
+    const [serviceAFirstResult, serviceASecondResult, serviceBResult] =
+      await Promise.all([
+        serviceAFirstHandler.promise,
+        serviceASecondHandler.promise,
+        serviceBHandler.promise,
+      ]);
+
+    expect(serviceAFirstResult.message.data).to.deep.equal({
+      text: "Hello to everyone",
+    });
+
+    expect(serviceASecondResult.message.data).to.deep.equal({
+      text: "Hello to everyone",
+    });
+
+    expect(serviceBResult.message.data).to.deep.equal({
+      text: "Hello to everyone",
+    });
+
+    expect(serviceAFirstResult.message.meta.type).to.equal(eventType);
+    expect(serviceASecondResult.message.meta.type).to.equal(eventType);
+    expect(serviceBResult.message.meta.type).to.equal(eventType);
+
+    expect(serviceAFirstResult.message.meta.source).to.equal(
+      "publisher-service",
+    );
+
+    expect(serviceASecondResult.message.meta.source).to.equal(
+      "publisher-service",
+    );
+
+    expect(serviceBResult.message.meta.source).to.equal("publisher-service");
+
+    expect(serviceAFirstResult.routingKey).to.equal(eventType);
+    expect(serviceASecondResult.routingKey).to.equal(eventType);
+    expect(serviceBResult.routingKey).to.equal(eventType);
+
+    expect(serviceAFirstResult.message.meta.id).to.equal(
+      serviceASecondResult.message.meta.id,
+    );
+
+    expect(serviceAFirstResult.message.meta.id).to.equal(
+      serviceBResult.message.meta.id,
+    );
   });
 });

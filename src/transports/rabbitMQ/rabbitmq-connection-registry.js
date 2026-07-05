@@ -19,15 +19,15 @@ function normalizeConfig(config = {}) {
 export class RabbitMqConnectionRegistry {
   static get(name = "main", config = {}) {
     config = normalizeConfig(config);
-    const connectionName = name ?? "main";
+
     const signature = getConnectionSignature(config);
 
-    const existing = connections.get(connectionName);
+    const existing = connections.get(name);
 
     if (existing) {
       if (existing.signature !== signature) {
         throw new Error(
-          `RabbitMQ connection "${connectionName}" already exists with different config`,
+          `RabbitMQ connection "${name}" already exists with different config`,
         );
       }
 
@@ -36,7 +36,7 @@ export class RabbitMqConnectionRegistry {
 
     const connection = new RabbitMqConnection(config);
 
-    connections.set(connectionName, {
+    connections.set(name, {
       connection,
       signature,
     });
@@ -63,6 +63,10 @@ export class RabbitMqConnectionRegistry {
 
   static has(name = "main") {
     return connections.has(name);
+  }
+
+  static list() {
+    return [...connections.keys()];
   }
 
   static clear() {

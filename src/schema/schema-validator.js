@@ -7,7 +7,6 @@ export class SchemaValidator {
   #validators;
 
   constructor(schemas = {}) {
-    console.log("SCHEMAS", schemas);
     this.#validators = {};
     this.#ajv = new Ajv();
     addFormats(this.#ajv);
@@ -68,7 +67,6 @@ export class SchemaValidator {
   }
 
   validate(data, type = "message") {
-    console.log("VALIDATING");
     if (type === "message") return this.validateMessage(data);
     return this.#validateAs(data, type);
   }

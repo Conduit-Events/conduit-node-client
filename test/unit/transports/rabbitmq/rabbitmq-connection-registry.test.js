@@ -141,4 +141,26 @@ describe("RabbitMqConnectionRegistry", function () {
     expect(RabbitMqConnectionRegistry.has("main")).to.equal(false);
     expect(fakeBrokerConnection.closeCalls).to.equal(0);
   });
+
+  it("lists multiple connection", async function () {
+    const fakeBrokerConnection = createFakeAmqpConnection();
+
+    const fakeAmqp = {
+      async connect() {
+        return fakeBrokerConnection;
+      },
+    };
+    const connection = RabbitMqConnectionRegistry.get("main1", {
+      url: "amqp://test-broker",
+      amqp: fakeAmqp,
+    });
+
+    const connection2 = RabbitMqConnectionRegistry.get("main2", {
+      url: "amqp://test-broker2",
+      amqp: fakeAmqp,
+    });
+
+    expect(RabbitMqConnectionRegistry.list()).to.deep.equal(["main1", "main2"]);
+    RabbitMqConnectionRegistry.clear();
+  });
 });
