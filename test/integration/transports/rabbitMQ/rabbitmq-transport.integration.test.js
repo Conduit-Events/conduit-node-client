@@ -132,18 +132,18 @@ describe("RabbitMqTransport integration", function () {
     const id = createTestId();
 
     const namespace = id;
-    const serviceName = "email-service";
+    const service = "email-service";
 
     names = {
       exchange: `conduit.${namespace}.events`,
       deadLetterExchange: `conduit.${namespace}.events.dlx`,
-      queue: `${namespace}.${serviceName}`,
-      deadLetterQueue: `${namespace}.${serviceName}.dlq`,
+      queue: `${namespace}.${service}`,
+      deadLetterQueue: `${namespace}.${service}.dlq`,
     };
 
     transport = new RabbitMqTransport({
       namespace,
-      serviceName,
+      service,
       connectionName: id,
       url: RABBITMQ_URL,
     });

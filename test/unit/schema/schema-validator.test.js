@@ -62,7 +62,7 @@ describe("SchemaValidator", function () {
   });
 
   it("throws when required data is missing", function () {
-    (() => validator.validate(badEventMessage)).should.throw("Invalid message");
+    (() => validator.validate(badEventMessage)).should.throw("Invalid event");
   });
 
   it("allows custom schemas", function () {

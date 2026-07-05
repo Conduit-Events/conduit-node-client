@@ -5,11 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "mocha \"test/**/*.test.js\"",
-    "test-integration": "mocha \"test/integration/**/*.test.js\""
+    "test": "npm run test:unit",
+    "test:unit": "mocha \"test/unit/**/*.test.js\"",
+    "test:integration": "RUN_RABBITMQ_INTEGRATION=true mocha \"test/integration/**/*.test.js\"",
+    "lint": "eslint ."
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Janco Yspeert",
+  "license": "MIT",
   "dependencies": {
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",

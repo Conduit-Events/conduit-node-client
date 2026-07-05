@@ -1,5 +1,8 @@
 export function configureRabbitMqTransport(config = {}) {
   const namespace = config.namespace ?? "default";
+  if (!config.service) {
+    throw new Error("RabbitMQ transport requires config.service");
+  }
   const service = config.service;
 
   const exchange = config.exchange ?? `conduit.${namespace}.events`;

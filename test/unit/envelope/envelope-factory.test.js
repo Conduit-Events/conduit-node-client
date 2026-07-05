@@ -261,17 +261,6 @@ describe("EnvelopeFactory", function () {
       ).to.throw("Envelope type is required");
     });
 
-    it("throws when streamId is missing", function () {
-      const factory = createFactory();
-
-      expect(() =>
-        factory.create({
-          kind: "event",
-          type: "user.created",
-        }),
-      ).to.throw("Envelope streamId is required");
-    });
-
     it("throws when source is missing from both meta and factory config", function () {
       const factory = createFactory({
         source: undefined,

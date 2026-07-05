@@ -33,7 +33,7 @@ describe("RabbitMqTransport", function () {
 
     const transport = new RabbitMqTransport({
       namespace: options.namespace ?? "studio",
-      serviceName: options.serviceName ?? "email-service",
+      service: options.service ?? "email-service",
       connection: fakeConnection,
       exchange: options.exchange,
       exchangeType: options.exchangeType,
