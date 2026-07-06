@@ -31,9 +31,9 @@ export class RabbitMqTransport extends Transport {
   }
 
   async connect() {
-    if (this._publishChannel && this._consumeChannel) return;
+    if (this._publishChannel && this._consumeChannel) {return;}
 
-    if (this._connecting) return this._connecting;
+    if (this._connecting) {return this._connecting;}
 
     this._connecting = this._connectChannels();
 
@@ -204,7 +204,7 @@ export class RabbitMqTransport extends Transport {
   }
 
   async _ensureConsumer(queue, options = {}) {
-    if (this._consumersByQueue.has(queue)) return;
+    if (this._consumersByQueue.has(queue)) {return;}
 
     const consumer = await this._consumeChannel.consume(
       queue,
@@ -224,7 +224,7 @@ export class RabbitMqTransport extends Transport {
   }
 
   async _handleRawMessage(queue, rawMessage) {
-    if (!rawMessage) return;
+    if (!rawMessage) {return;}
 
     let message;
 
@@ -338,7 +338,7 @@ export class RabbitMqTransport extends Transport {
       throw new Error("RabbitMQ subscribe requires a pattern");
     }
 
-    if (pattern === "#") return;
+    if (pattern === "#") {return;}
 
     if (pattern.includes("*") || pattern.includes("#")) {
       throw new Error(

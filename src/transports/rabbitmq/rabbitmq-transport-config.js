@@ -81,7 +81,7 @@ function configureDeadLetterQueue({ queueName, exchange, deadLetter = true }) {
     };
   }
 
-  if (deadLetter === true || deadLetter == null) {
+  if (deadLetter === true || deadLetter === null) {
     return {
       enabled: true,
       exchange: `${exchange}.dlx`,

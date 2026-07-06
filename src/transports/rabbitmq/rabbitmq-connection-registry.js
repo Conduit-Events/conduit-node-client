@@ -47,7 +47,7 @@ export class RabbitMqConnectionRegistry {
   static async close(name = "main") {
     const record = connections.get(name);
 
-    if (!record) return;
+    if (!record) {return;}
 
     await record.connection.close();
     connections.delete(name);

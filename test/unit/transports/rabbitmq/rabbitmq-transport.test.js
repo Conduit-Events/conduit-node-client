@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { RabbitMqTransport } from "../../../../src/transports/rabbitMQ/rabbitmq-transport.js";
+import { RabbitMqTransport } from "../../../../src/transports/rabbitmq/rabbitmq-transport.js";
 import {
   createFakeAmqpConnection,
   createRawMessage,

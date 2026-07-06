@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import amqp from "amqplib";
 
-import { RabbitMqTransport } from "../../../../src/transports/rabbitMQ/rabbitmq-transport.js";
-import { RabbitMqConnectionRegistry } from "../../../../src/transports/rabbitMQ/rabbitmq-connection-registry.js";
+import { RabbitMqTransport } from "../../../../src/transports/rabbitmq/rabbitmq-transport.js";
+import { RabbitMqConnectionRegistry } from "../../../../src/transports/rabbitmq/rabbitmq-connection-registry.js";
 
 const RUN_INTEGRATION_TESTS = process.env.RUN_RABBITMQ_INTEGRATION === "true";
 

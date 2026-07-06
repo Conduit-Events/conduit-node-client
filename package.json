@@ -8,7 +8,8 @@
     "test": "npm run test:unit",
     "test:unit": "mocha \"test/unit/**/*.test.js\"",
     "test:integration": "RUN_RABBITMQ_INTEGRATION=true mocha \"test/integration/**/*.test.js\"",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "author": "Janco Yspeert",
   "license": "MIT",
@@ -19,6 +20,7 @@
     "uuid": "^14.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "chai": "^6.2.2",
     "eslint": "^10.5.0",
     "mocha": "^11.7.6"

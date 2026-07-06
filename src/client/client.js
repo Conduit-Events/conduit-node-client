@@ -1,6 +1,6 @@
 import { EnvelopeFactory } from "../envelope/envelope-factory.js";
 import { SchemaValidator } from "../schema/schema-validator.js";
-import { RabbitMqTransport } from "../transports/rabbitMQ/rabbitmq-transport.js";
+import { RabbitMqTransport } from "../transports/rabbitmq/rabbitmq-transport.js";
 
 const DEFAULT_NAMESPACE = "default";
 

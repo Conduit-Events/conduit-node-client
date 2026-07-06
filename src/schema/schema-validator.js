@@ -1,6 +1,6 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import protocolSchema from "./protocol/conduit-message.schema.json" assert { type: "json" };
+import protocolSchema from "./protocol/conduit-message.schema.json" with { type: "json" };
 
 export class SchemaValidator {
   #ajv;
@@ -24,8 +24,8 @@ export class SchemaValidator {
     for (const [aliasType, targetType] of aliases) {
       this.alias(aliasType, targetType);
     }
-    if (!this.#validators.event) this.alias("event", "message");
-    if (!this.#validators.command) this.alias("command", "message");
+    if (!this.#validators.event) {this.alias("event", "message");}
+    if (!this.#validators.command) {this.alias("command", "message");}
   }
 
   addSchema(type, schema) {
@@ -62,12 +62,12 @@ export class SchemaValidator {
 
   isValid(data, type = "message") {
     const validator = this.#validators[type];
-    if (!validator) return false;
+    if (!validator) {return false;}
     return validator(data);
   }
 
   validate(data, type = "message") {
-    if (type === "message") return this.validateMessage(data);
+    if (type === "message") {return this.validateMessage(data);}
     return this.#validateAs(data, type);
   }
 

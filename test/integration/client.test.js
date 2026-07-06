@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import Client from "../../src/client/client.js";
-import { RabbitMqConnectionRegistry } from "../../src/transports/rabbitMQ/rabbitmq-connection-registry.js";
+import { RabbitMqConnectionRegistry } from "../../src/transports/rabbitmq/rabbitmq-connection-registry.js";
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL ?? "amqp://localhost";
 

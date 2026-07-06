@@ -1,7 +1,7 @@
 // test/unit/transports/rabbitmq/rabbitmq-connection-registry.test.js
 
 import { expect } from "chai";
-import { RabbitMqConnectionRegistry } from "../../../../src/transports/rabbitMQ/rabbitmq-connection-registry.js";
+import { RabbitMqConnectionRegistry } from "../../../../src/transports/rabbitmq/rabbitmq-connection-registry.js";
 import { createFakeAmqpConnection } from "../../../helpers/fake-rabbitmq.js";
 
 describe("RabbitMqConnectionRegistry", function () {
@@ -150,12 +150,12 @@ describe("RabbitMqConnectionRegistry", function () {
         return fakeBrokerConnection;
       },
     };
-    const connection = RabbitMqConnectionRegistry.get("main1", {
+    const _connection = RabbitMqConnectionRegistry.get("main1", {
       url: "amqp://test-broker",
       amqp: fakeAmqp,
     });
 
-    const connection2 = RabbitMqConnectionRegistry.get("main2", {
+    const _connection2 = RabbitMqConnectionRegistry.get("main2", {
       url: "amqp://test-broker2",
       amqp: fakeAmqp,
     });

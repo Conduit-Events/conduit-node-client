@@ -1,7 +1,7 @@
 // test/unit/transports/rabbitmq/rabbitmq-connection.test.js
 
 import { expect } from "chai";
-import { RabbitMqConnection } from "../../../../src/transports/rabbitMQ/rabbitmq-connection.js";
+import { RabbitMqConnection } from "../../../../src/transports/rabbitmq/rabbitmq-connection.js";
 import {
   createDeferred,
   createFakeAmqpConnection,
