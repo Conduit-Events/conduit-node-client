@@ -103,10 +103,7 @@ emailService.on("user.created", async (message, ctx) => {
   console.log("Routing key:", ctx.routingKey);
 });
 
-await Promise.all([
-  userService.start(),
-  emailService.start(),
-]);
+await Promise.all([userService.start(), emailService.start()]);
 
 await userService.emit(
   "user.created",
@@ -119,10 +116,7 @@ await userService.emit(
   },
 );
 
-await Promise.all([
-  userService.stop(),
-  emailService.stop(),
-]);
+await Promise.all([userService.stop(), emailService.stop()]);
 ```
 
 `start()` waits for all handlers registered with `on()` to be activated before it resolves.
@@ -157,33 +151,33 @@ const client = Client.create({
 
 ### Top-level options
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `namespace` | `"default"` | Application or system boundary used when deriving RabbitMQ names. |
-| `service` | none | Logical service name. Required for normal subscriptions unless a queue name is supplied explicitly. |
-| `source` | `service` | Source written to outgoing message metadata. |
-| `defaultVersion` | `"1.0.0"` | Default envelope version. |
-| `schemas` | `{}` | Payload schemas or schema aliases keyed by message type. |
-| `rabbitmq` | `{}` | RabbitMQ transport configuration. |
-| `transport` | generated RabbitMQ transport | Advanced dependency-injection override. |
-| `envelopes` | generated envelope factory | Advanced dependency-injection override. |
-| `validator` | generated schema validator | Advanced dependency-injection override. |
+| Option           | Default                      | Description                                                                                         |
+| ---------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `namespace`      | `"default"`                  | Application or system boundary used when deriving RabbitMQ names.                                   |
+| `service`        | none                         | Logical service name. Required for normal subscriptions unless a queue name is supplied explicitly. |
+| `source`         | `service`                    | Source written to outgoing message metadata.                                                        |
+| `defaultVersion` | `"1.0.0"`                    | Default envelope version.                                                                           |
+| `schemas`        | `{}`                         | Payload schemas or schema aliases keyed by message type.                                            |
+| `rabbitmq`       | `{}`                         | RabbitMQ transport configuration.                                                                   |
+| `transport`      | generated RabbitMQ transport | Advanced dependency-injection override.                                                             |
+| `envelopes`      | generated envelope factory   | Advanced dependency-injection override.                                                             |
+| `validator`      | generated schema validator   | Advanced dependency-injection override.                                                             |
 
 ### RabbitMQ options
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `url` | `"amqp://localhost"` | RabbitMQ connection URL. |
-| `connectionName` | `"main"` | Process-local connection-registry key. |
-| `exchange` | `conduit.<namespace>.events` | Exchange used for both events and commands. |
-| `exchangeType` | `"topic"` | RabbitMQ exchange type. |
-| `prefetch` | `10` | Consumer prefetch applied to the consume channel. |
-| `queue.name` | `<namespace>.<service>` | Default service queue name. |
-| `queue.durable` | `true` | Whether the queue survives broker restarts. |
-| `queue.exclusive` | `false` | Whether the queue is exclusive to its connection. |
-| `queue.autoDelete` | `false` | Whether RabbitMQ automatically deletes the queue. |
-| `queue.arguments` | `{}` | Additional RabbitMQ queue arguments. |
-| `queue.deadLetter` | `true` | Enables default dead-letter infrastructure. |
+| Option             | Default                      | Description                                       |
+| ------------------ | ---------------------------- | ------------------------------------------------- |
+| `url`              | `"amqp://localhost"`         | RabbitMQ connection URL.                          |
+| `connectionName`   | `"main"`                     | Process-local connection-registry key.            |
+| `exchange`         | `conduit.<namespace>.events` | Exchange used for both events and commands.       |
+| `exchangeType`     | `"topic"`                    | RabbitMQ exchange type.                           |
+| `prefetch`         | `10`                         | Consumer prefetch applied to the consume channel. |
+| `queue.name`       | `<namespace>.<service>`      | Default service queue name.                       |
+| `queue.durable`    | `true`                       | Whether the queue survives broker restarts.       |
+| `queue.exclusive`  | `false`                      | Whether the queue is exclusive to its connection. |
+| `queue.autoDelete` | `false`                      | Whether RabbitMQ automatically deletes the queue. |
+| `queue.arguments`  | `{}`                         | Additional RabbitMQ queue arguments.              |
+| `queue.deadLetter` | `true`                       | Enables default dead-letter infrastructure.       |
 
 ## Lifecycle
 
@@ -192,12 +186,9 @@ const client = Client.create({
 Use `on()` when handlers are known during service initialisation:
 
 ```js
-const subscription = client.on(
-  "user.created",
-  async (message, ctx) => {
-    console.log(message.data);
-  },
-);
+const subscription = client.on("user.created", async (message, ctx) => {
+  console.log(message.data);
+});
 
 await client.start();
 ```
@@ -222,12 +213,9 @@ Use `subscribe()` when the client is already running and the caller needs to wai
 ```js
 await client.start();
 
-const subscription = await client.subscribe(
-  "user.created",
-  async (message) => {
-    console.log(message.data);
-  },
-);
+const subscription = await client.subscribe("user.created", async (message) => {
+  console.log(message.data);
+});
 ```
 
 Calling `subscribe()` before `start()` rejects. Use `on()` for deterministic startup registration.
@@ -239,7 +227,7 @@ await client.stop();
 await client.start();
 ```
 
-Logical subscriptions registered with `on()` are retained across a normal stop and restart unless explicitly unsubscribed.
+Logical subscriptions registered with `on()` or `subscribe()` are retained across a normal stop and restart unless explicitly unsubscribed.
 
 ## Publishing events
 
