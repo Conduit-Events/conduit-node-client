@@ -67,7 +67,7 @@ async function expectRejected(fn) {
 function createTestId() {
   return `test_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
-describe("Client", function () {
+describe("Client, subscribe later", function () {
   this.timeout(10000);
   let publisher;
   let serviceA;
@@ -112,14 +112,14 @@ describe("Client", function () {
     await serviceA.start();
     await serviceB.start();
 
-    await serviceA.on("service-b.sent", async (message) => {
+    let sub1 = serviceA.on("service-b.sent", async (message) => {
       receivedByA.push(message);
     });
-
-    await serviceB.on("service-a.sent", async (message) => {
+    let sub2 = serviceB.on("service-a.sent", async (message) => {
       receivedByB.push(message);
     });
-
+    await sub1.ready;
+    await sub2.ready;
     await serviceA.emit("service-a.sent", {
       text: "Hello from A",
     });
@@ -213,19 +213,22 @@ describe("Client", function () {
     await serviceA.start();
     await serviceB.start();
 
-    await serviceA.on("service-b.sent", async (message, ctx) => {
+    const sub1 = serviceA.on("service-b.sent", async (message, ctx) => {
       receivedByA.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
 
-    await serviceB.on("service-a.sent", async (message, ctx) => {
+    const sub2 = serviceB.on("service-a.sent", async (message, ctx) => {
       receivedByB.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
+
+    await sub1.ready;
+    await sub2.ready;
 
     await serviceA.emit("service-a.sent", {
       text: "Hello from A",
@@ -314,26 +317,30 @@ describe("Client", function () {
     await serviceA.start();
     await serviceB.start();
 
-    await serviceA.on(eventType, async (message, ctx) => {
+    const sub1 = serviceA.on(eventType, async (message, ctx) => {
       serviceAFirstHandler.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
 
-    await serviceA.on(eventType, async (message, ctx) => {
+    const sub2 = serviceA.on(eventType, async (message, ctx) => {
       serviceASecondHandler.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
 
-    await serviceB.on(eventType, async (message, ctx) => {
+    const sub3 = serviceB.on(eventType, async (message, ctx) => {
       serviceBHandler.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
+
+    await sub1.ready;
+    await sub2.ready;
+    await sub3.ready;
 
     await publisher.emit(eventType, {
       text: "Hello to everyone",
@@ -432,14 +439,14 @@ describe("Client", function () {
     await serviceA.start();
     await serviceB.start();
 
-    await serviceB.on(childEventType, async (message, ctx) => {
+    const sub1 = serviceB.on(childEventType, async (message, ctx) => {
       childReceived.resolve({
         message,
         routingKey: ctx.routingKey,
       });
     });
 
-    await serviceA.on(parentEventType, async (message, ctx) => {
+    const sub2 = serviceA.on(parentEventType, async (message, ctx) => {
       parentHandled.resolve({
         message,
         routingKey: ctx.routingKey,
@@ -450,7 +457,8 @@ describe("Client", function () {
         email: message.data.email,
       });
     });
-
+    await sub1.ready;
+    await sub2.ready;
     await publisher.emit(
       parentEventType,
       {

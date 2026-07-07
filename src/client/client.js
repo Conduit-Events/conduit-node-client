@@ -30,6 +30,10 @@ export default class Client {
     this.envelopes = config.envelopes ?? new EnvelopeFactory(this._config);
 
     this.validator = config.validator ?? new SchemaValidator(config.schemas);
+
+    this._subscriptions = new Map();
+    this._subscriptionId = 0;
+    this._state = "stopped";
   }
 
   static create(...args) {
@@ -37,14 +41,46 @@ export default class Client {
   }
 
   async start() {
-    await this.transport.connect();
-    this._started = true;
-    return this;
+    if (this._state === "started") return this;
+    if (this._state === "starting") return this._starting;
+
+    this._state = "starting";
+
+    this._starting = (async () => {
+      await this.transport.connect();
+
+      for (const subscription of this._subscriptions.values()) {
+        await this.#activateSubscription(subscription);
+      }
+
+      this._state = "started";
+      return this;
+    })();
+
+    try {
+      return await this._starting;
+    } catch (err) {
+      this._state = "failed";
+      throw err;
+    } finally {
+      this._starting = null;
+    }
   }
 
   async stop(options = {}) {
+    if (this._state === "stopped") return this;
+
+    this._state = "stopping";
+
     await this.transport.disconnect(options);
-    this._started = false;
+
+    for (const subscription of this._subscriptions.values()) {
+      subscription.active = false;
+      subscription.transportSubscription = null;
+      subscription.ready = Promise.resolve();
+    }
+
+    this._state = "stopped";
     return this;
   }
 
@@ -56,23 +92,67 @@ export default class Client {
     return this.#publish("command", type, data, options);
   }
 
-  async on(type, handler, options = {}) {
+  on(type, handler, options = {}) {
     this.#assertCanSubscribe(type, handler, options);
 
-    return this.transport.subscribe(
+    const subscription = {
+      id: ++this._subscriptionId,
       type,
+      handler,
+      options,
+      active: false,
+      cancelled: false,
+      transportSubscription: null,
+      ready: Promise.resolve(),
+    };
+
+    this._subscriptions.set(subscription.id, subscription);
+
+    if (this._state === "started") {
+      subscription.ready = this.#activateSubscription(subscription);
+    }
+
+    return {
+      id: subscription.id,
+      type,
+      get ready() {
+        return subscription.ready;
+      },
+      unsubscribe: async () => {
+        await this.#unsubscribe(subscription.id);
+      },
+    };
+  }
+
+  async subscribe(type, handler, options = {}) {
+    const subscription = this.on(type, handler, options);
+    await subscription.ready;
+    return subscription;
+  }
+
+  async #activateSubscription(subscription) {
+    if (subscription.cancelled || subscription.active) {
+      return;
+    }
+
+    const transportSubscription = await this.transport.subscribe(
+      subscription.type,
       async (message, transportContext = {}) => {
         this.validator.validate(message);
+
         const context = this.#createHandlerContext(message, transportContext);
 
-        return handler(message, context);
+        return subscription.handler(message, context);
       },
-      options,
+      subscription.options,
     );
+
+    subscription.transportSubscription = transportSubscription;
+    subscription.active = true;
   }
 
   #assertStarted() {
-    if (!this._started) {
+    if (this._state !== "started") {
       throw new Error(`Client must be started before it can broadcast events.`);
     }
   }
@@ -149,6 +229,44 @@ export default class Client {
       throw new Error(
         "Client subscribe requires config.service or options.queue.name. This prevents accidental queue-name collisions.",
       );
+    }
+  }
+
+  async #unsubscribe(subscriptionId) {
+    const subscription = this._subscriptions.get(subscriptionId);
+
+    if (!subscription) {
+      return false;
+    }
+
+    subscription.cancelled = true;
+    this._subscriptions.delete(subscriptionId);
+
+    // If activation is currently in progress, wait for it to settle.
+    // This prevents a race where unsubscribe() is called while start()
+    // is still activating subscriptions.
+    try {
+      await subscription.ready;
+    } catch {
+      // If activation failed, there may be nothing to clean up.
+      // The original activation error should surface from start()/ready,
+      // not from unsubscribe().
+    }
+
+    await this.#deactivateSubscription(subscription);
+
+    return true;
+  }
+
+  async #deactivateSubscription(subscription) {
+    const transportSubscription = subscription.transportSubscription;
+
+    subscription.active = false;
+    subscription.transportSubscription = null;
+    subscription.ready = Promise.resolve();
+
+    if (transportSubscription?.unsubscribe) {
+      await transportSubscription.unsubscribe();
     }
   }
 }
