@@ -4,6 +4,7 @@ import {
   createFakeAmqpConnection,
   createRawMessage,
 } from "../../../helpers/fake-rabbitmq.js";
+import { RabbitMqConnectionRegistry } from "../../../../src/transports/rabbitmq/rabbitmq-connection-registry.js";
 
 function nextTick() {
   return new Promise((resolve) => setImmediate(resolve));
@@ -63,6 +64,25 @@ describe("RabbitMqTransport", function () {
       email: "janx@example.com",
     },
   };
+
+  function createRegistryTransport({
+    service = "email-service",
+    connectionName = "main",
+    fakeAmqp,
+  } = {}) {
+    return new RabbitMqTransport({
+      namespace: "studio",
+      service,
+      connectionName,
+      url: "amqp://test-broker",
+      amqp: fakeAmqp,
+    });
+  }
+
+  afterEach(async function () {
+    await RabbitMqConnectionRegistry.closeAll();
+    RabbitMqConnectionRegistry.clear();
+  });
 
   it("connects by creating publish and consume channels", async function () {
     const { transport, fakeConnection } = createTransport({
@@ -555,5 +575,157 @@ describe("RabbitMqTransport", function () {
     // Because the connection was injected, transport.disconnect()
     // should not close the shared/injected broker connection.
     expect(fakeConnection.closeCalls).to.equal(0);
+  });
+  it("closes a shared connection only after the final transport stops", async function () {
+    const brokerConnection = createFakeAmqpConnection();
+
+    const fakeAmqp = {
+      async connect() {
+        return brokerConnection;
+      },
+    };
+
+    const first = new RabbitMqTransport({
+      connectionName: "main",
+      url: "amqp://test",
+      amqp: fakeAmqp,
+      namespace: "test",
+      service: "first",
+    });
+
+    const second = new RabbitMqTransport({
+      connectionName: "main",
+      url: "amqp://test",
+      amqp: fakeAmqp,
+      namespace: "test",
+      service: "second",
+    });
+
+    await first.connect();
+    await second.connect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(2);
+
+    await first.disconnect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(1);
+    expect(brokerConnection.closeCalls).to.equal(0);
+
+    await second.disconnect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(0);
+    expect(brokerConnection.closeCalls).to.equal(1);
+  });
+
+  it("does not acquire the registry connection twice when connect is repeated", async function () {
+    const fakeBrokerConnection = createFakeAmqpConnection();
+
+    let brokerConnectCalls = 0;
+
+    const fakeAmqp = {
+      async connect() {
+        brokerConnectCalls += 1;
+        return fakeBrokerConnection;
+      },
+    };
+
+    const transport = createRegistryTransport({ fakeAmqp });
+
+    await transport.connect();
+    await transport.connect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(1);
+    expect(brokerConnectCalls).to.equal(1);
+
+    await transport.disconnect();
+  });
+
+  it("does not release the registry connection twice when disconnect is repeated", async function () {
+    const fakeBrokerConnection = createFakeAmqpConnection();
+
+    const fakeAmqp = {
+      async connect() {
+        return fakeBrokerConnection;
+      },
+    };
+
+    const transport = createRegistryTransport({ fakeAmqp });
+
+    await transport.connect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(1);
+
+    await transport.disconnect();
+    await transport.disconnect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(0);
+    expect(RabbitMqConnectionRegistry.has("main")).to.equal(false);
+    expect(fakeBrokerConnection.closeCalls).to.equal(1);
+  });
+
+  it("releases its registry lease when channel creation fails", async function () {
+    const fakeBrokerConnection = createFakeAmqpConnection();
+
+    fakeBrokerConnection.createConfirmChannel = async function () {
+      throw new Error("Confirm channel creation failed");
+    };
+
+    const fakeAmqp = {
+      async connect() {
+        return fakeBrokerConnection;
+      },
+    };
+
+    const transport = createRegistryTransport({ fakeAmqp });
+
+    await expectAsyncError(
+      transport.connect(),
+      "Confirm channel creation failed",
+    );
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(0);
+    expect(RabbitMqConnectionRegistry.has("main")).to.equal(false);
+    expect(fakeBrokerConnection.closeCalls).to.equal(1);
+  });
+
+  it("keeps a shared connection open while another transport still uses it", async function () {
+    const fakeBrokerConnection = createFakeAmqpConnection();
+
+    const fakeAmqp = {
+      async connect() {
+        return fakeBrokerConnection;
+      },
+    };
+
+    const first = createRegistryTransport({
+      service: "service-a",
+      fakeAmqp,
+    });
+
+    const second = createRegistryTransport({
+      service: "service-b",
+      fakeAmqp,
+    });
+
+    await first.connect();
+    await second.connect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(2);
+
+    await first.disconnect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(1);
+    expect(fakeBrokerConnection.closeCalls).to.equal(0);
+
+    await second.publish(message);
+
+    expect(fakeBrokerConnection.confirmChannels[1].publishCalls).to.have.length(
+      1,
+    );
+
+    await second.disconnect();
+
+    expect(RabbitMqConnectionRegistry.references("main")).to.equal(0);
+    expect(fakeBrokerConnection.closeCalls).to.equal(1);
   });
 });

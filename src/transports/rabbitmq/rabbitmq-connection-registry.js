@@ -2,12 +2,6 @@ import { RabbitMqConnection } from "./rabbitmq-connection.js";
 
 const connections = new Map();
 
-function getConnectionSignature(config = {}) {
-  return JSON.stringify({
-    url: config.url,
-  });
-}
-
 function normalizeConfig(config = {}) {
   const trimmedUrl = config.url?.trim();
 
@@ -16,49 +10,70 @@ function normalizeConfig(config = {}) {
     url: trimmedUrl || "amqp://localhost",
   };
 }
+
+function getConnectionSignature(config = {}) {
+  return JSON.stringify({
+    url: config.url,
+  });
+}
+
 export class RabbitMqConnectionRegistry {
-  static get(name = "main", config = {}) {
-    config = normalizeConfig(config);
+  static acquire(name = "main", config = {}) {
+    const normalizedConfig = normalizeConfig(config);
+    const signature = getConnectionSignature(normalizedConfig);
 
-    const signature = getConnectionSignature(config);
+    let record = connections.get(name);
 
-    const existing = connections.get(name);
-
-    if (existing) {
-      if (existing.signature !== signature) {
+    if (record) {
+      if (record.signature !== signature) {
         throw new Error(
           `RabbitMQ connection "${name}" already exists with different config`,
         );
       }
 
-      return existing.connection;
+      record.references += 1;
+      return record.connection;
     }
 
-    const connection = new RabbitMqConnection(config);
+    const connection = new RabbitMqConnection(normalizedConfig);
 
     connections.set(name, {
       connection,
       signature,
+      references: 1,
     });
 
     return connection;
   }
 
-  static async close(name = "main") {
+  static async release(name = "main", expectedConnection) {
     const record = connections.get(name);
 
-    if (!record) {return;}
+    if (!record) return false;
 
-    await record.connection.close();
-    connections.delete(name);
-  }
-
-  static async closeAll() {
-    for (const record of connections.values()) {
-      await record.connection.close();
+    // Prevent an old transport from releasing a newer connection that
+    // happens to use the same registry name.
+    if (expectedConnection && record.connection !== expectedConnection) {
+      return false;
     }
 
-    connections.clear();
+    record.references -= 1;
+
+    if (record.references > 0) {
+      return false;
+    }
+
+    // Remove it before awaiting close. A new acquisition during closing
+    // can then safely create a new registry record.
+    connections.delete(name);
+
+    await record.connection.close();
+
+    return true;
+  }
+
+  static references(name = "main") {
+    return connections.get(name)?.references ?? 0;
   }
 
   static has(name = "main") {
@@ -67,6 +82,16 @@ export class RabbitMqConnectionRegistry {
 
   static list() {
     return [...connections.keys()];
+  }
+
+  static async closeAll() {
+    const records = [...connections.values()];
+
+    connections.clear();
+
+    await Promise.allSettled(
+      records.map(({ connection }) => connection.close()),
+    );
   }
 
   static clear() {

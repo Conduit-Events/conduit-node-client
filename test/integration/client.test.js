@@ -505,4 +505,36 @@ describe("Client, subscribe later", function () {
     expect(parentResult.routingKey).to.equal(parentEventType);
     expect(childResult.routingKey).to.equal(childEventType);
   });
+
+  it("stopping one client does not prevent another client that shares the connection from publishing", async function () {
+    const namespace = createTestId();
+    const connectionName = `${namespace}-shared`;
+
+    serviceA = Client.create({
+      namespace,
+      service: "service-a",
+      rabbitmq: {
+        url: RABBITMQ_URL,
+        connectionName,
+      },
+    });
+
+    serviceB = Client.create({
+      namespace,
+      service: "service-b",
+      rabbitmq: {
+        url: RABBITMQ_URL,
+        connectionName,
+      },
+    });
+
+    await serviceA.start();
+    await serviceB.start();
+
+    await serviceA.stop();
+
+    await serviceB.emit("service-b.still-running", {
+      text: "Service B is still connected",
+    });
+  });
 });

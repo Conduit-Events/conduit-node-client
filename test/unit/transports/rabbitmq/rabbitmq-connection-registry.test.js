@@ -15,11 +15,11 @@ describe("RabbitMqConnectionRegistry", function () {
   });
 
   it("returns the same connection for the same name and config", function () {
-    const first = RabbitMqConnectionRegistry.get("main", {
+    const first = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://test-broker",
     });
 
-    const second = RabbitMqConnectionRegistry.get("main", {
+    const second = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://test-broker",
     });
 
@@ -28,11 +28,11 @@ describe("RabbitMqConnectionRegistry", function () {
   });
 
   it("returns different connections for different names", function () {
-    const main = RabbitMqConnectionRegistry.get("main", {
+    const main = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://test-broker",
     });
 
-    const analytics = RabbitMqConnectionRegistry.get("analytics", {
+    const analytics = RabbitMqConnectionRegistry.acquire("analytics", {
       url: "amqp://test-broker",
     });
 
@@ -42,12 +42,12 @@ describe("RabbitMqConnectionRegistry", function () {
   });
 
   it("throws when the same connection name is reused with different config", function () {
-    RabbitMqConnectionRegistry.get("main", {
+    RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://first-broker",
     });
 
     expect(() => {
-      RabbitMqConnectionRegistry.get("main", {
+      RabbitMqConnectionRegistry.acquire("main", {
         url: "amqp://second-broker",
       });
     }).to.throw(
@@ -64,7 +64,7 @@ describe("RabbitMqConnectionRegistry", function () {
       },
     };
 
-    const connection = RabbitMqConnectionRegistry.get("main", {
+    const connection = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://test-broker",
       amqp: fakeAmqp,
     });
@@ -73,14 +73,14 @@ describe("RabbitMqConnectionRegistry", function () {
 
     expect(RabbitMqConnectionRegistry.has("main")).to.equal(true);
 
-    await RabbitMqConnectionRegistry.close("main");
+    await RabbitMqConnectionRegistry.release("main");
 
     expect(fakeBrokerConnection.closeCalls).to.equal(1);
     expect(RabbitMqConnectionRegistry.has("main")).to.equal(false);
   });
 
   it("close is safe when the named connection does not exist", async function () {
-    await RabbitMqConnectionRegistry.close("missing");
+    await RabbitMqConnectionRegistry.release("missing");
   });
 
   it("closes all registered connections", async function () {
@@ -99,12 +99,12 @@ describe("RabbitMqConnectionRegistry", function () {
       },
     };
 
-    const first = RabbitMqConnectionRegistry.get("main", {
+    const first = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://first-broker",
       amqp: firstAmqp,
     });
 
-    const second = RabbitMqConnectionRegistry.get("analytics", {
+    const second = RabbitMqConnectionRegistry.acquire("analytics", {
       url: "amqp://second-broker",
       amqp: secondAmqp,
     });
@@ -129,7 +129,7 @@ describe("RabbitMqConnectionRegistry", function () {
       },
     };
 
-    const connection = RabbitMqConnectionRegistry.get("main", {
+    const connection = RabbitMqConnectionRegistry.acquire("main", {
       url: "amqp://test-broker",
       amqp: fakeAmqp,
     });
@@ -150,12 +150,12 @@ describe("RabbitMqConnectionRegistry", function () {
         return fakeBrokerConnection;
       },
     };
-    const _connection = RabbitMqConnectionRegistry.get("main1", {
+    const _connection = RabbitMqConnectionRegistry.acquire("main1", {
       url: "amqp://test-broker",
       amqp: fakeAmqp,
     });
 
-    const _connection2 = RabbitMqConnectionRegistry.get("main2", {
+    const _connection2 = RabbitMqConnectionRegistry.acquire("main2", {
       url: "amqp://test-broker2",
       amqp: fakeAmqp,
     });

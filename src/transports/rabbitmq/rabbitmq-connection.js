@@ -12,8 +12,12 @@ export class RabbitMqConnection {
   }
 
   async connect() {
-    if (this._connection) {return this._connection;}
-    if (this._connecting) {return this._connecting;}
+    if (this._connection) {
+      return this._connection;
+    }
+    if (this._connecting) {
+      return this._connecting;
+    }
 
     this._connecting = this._amqp.connect(this._url);
 
@@ -48,7 +52,9 @@ export class RabbitMqConnection {
   }
 
   async close() {
-    if (!this._connection) {return;}
+    if (!this._connection) {
+      return;
+    }
 
     this._closing = true;
 

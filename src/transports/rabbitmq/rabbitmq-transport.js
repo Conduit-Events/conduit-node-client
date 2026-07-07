@@ -8,16 +8,12 @@ import {
 export class RabbitMqTransport extends Transport {
   constructor(config = {}) {
     super();
+
     this._config = configureRabbitMqTransport(config);
 
-    this._connection =
-      this._config.connection ??
-      RabbitMqConnectionRegistry.get(this._config.connectionName, {
-        url: this._config.url,
-        amqp: this._config.amqp,
-      });
-
-    this._usesRegistry = !this._config.connection;
+    this._usesRegistry = !this._config.connection; // allows us to pass in a connection for testing, etc.
+    this._connection = this._config.connection ?? null;
+    this._registryLeaseActive = false;
 
     this._publishChannel = null;
     this._consumeChannel = null;
@@ -26,25 +22,40 @@ export class RabbitMqTransport extends Transport {
     this._declaredQueues = new Map();
     this._subscriptionsByQueue = new Map();
     this._consumersByQueue = new Map();
-
     this._subscriptionId = 0;
   }
 
   async connect() {
-    if (this._publishChannel && this._consumeChannel) {
-      return;
-    }
+    if (this._publishChannel && this._consumeChannel) return;
+    if (this._connecting) return this._connecting;
 
-    if (this._connecting) {
-      return this._connecting;
-    }
-
-    this._connecting = this._connectChannels();
+    this._connecting = this.#connect();
 
     try {
       await this._connecting;
     } finally {
       this._connecting = null;
+    }
+  }
+
+  async #connect() {
+    if (this._usesRegistry && !this._registryLeaseActive) {
+      this._connection = RabbitMqConnectionRegistry.acquire(
+        this._config.connectionName,
+        {
+          url: this._config.url,
+          amqp: this._config.amqp,
+        },
+      );
+
+      this._registryLeaseActive = true;
+    }
+
+    try {
+      await this._connectChannels();
+    } catch (error) {
+      await this.#releaseRegistryConnection();
+      throw error;
     }
   }
 
@@ -83,9 +94,7 @@ export class RabbitMqTransport extends Transport {
     await this._consumeChannel.prefetch(this._config.prefetch);
   }
 
-  async disconnect(options = {}) {
-    const closeConnection = options.closeConnection ?? false;
-
+  async disconnect() {
     for (const consumer of this._consumersByQueue.values()) {
       if (this._consumeChannel) {
         await this._consumeChannel.cancel(consumer.consumerTag);
@@ -105,9 +114,21 @@ export class RabbitMqTransport extends Transport {
       this._consumeChannel = null;
     }
 
-    if (closeConnection && this._usesRegistry) {
-      await RabbitMqConnectionRegistry.close(this._config.connectionName);
-    }
+    await this.#releaseRegistryConnection();
+  }
+
+  async #releaseRegistryConnection() {
+    if (!this._usesRegistry || !this._registryLeaseActive) return;
+
+    const connection = this._connection;
+
+    this._registryLeaseActive = false;
+    this._connection = null;
+
+    await RabbitMqConnectionRegistry.release(
+      this._config.connectionName,
+      connection,
+    );
   }
 
   async publish(message, options = {}) {
