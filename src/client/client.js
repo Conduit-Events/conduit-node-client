@@ -39,38 +39,42 @@ export default class Client {
   static create(...args) {
     return new this(...args);
   }
-
   async start() {
-    if (this._state === "started") {
-      return this;
-    }
-    if (this._state === "starting") {
-      return this._starting;
-    }
+    if (this._state === "started") return this;
+    if (this._state === "starting") return this._starting;
 
     this._state = "starting";
 
     this._starting = (async () => {
-      await this.transport.connect();
+      try {
+        await this.transport.connect();
 
-      for (const subscription of this._subscriptions.values()) {
-        await this.#activateSubscription(subscription);
+        for (const subscription of this._subscriptions.values()) {
+          await this.#activateSubscription(subscription);
+        }
+
+        this._state = "started";
+        return this;
+      } catch (error) {
+        await this.transport.disconnect().catch(() => {});
+
+        for (const subscription of this._subscriptions.values()) {
+          subscription.active = false;
+          subscription.transportSubscription = null;
+          subscription.ready = Promise.resolve();
+        }
+
+        this._state = "failed";
+        throw error;
       }
-
-      this._state = "started";
-      return this;
     })();
 
     try {
       return await this._starting;
-    } catch (err) {
-      this._state = "failed";
-      throw err;
     } finally {
       this._starting = null;
     }
   }
-
   async stop(options = {}) {
     if (this._state === "stopped") {
       return this;
