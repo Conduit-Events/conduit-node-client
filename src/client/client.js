@@ -41,8 +41,8 @@ export default class Client {
   }
 
   async start() {
-    if (this._state === "started") return this;
-    if (this._state === "starting") return this._starting;
+    if (this._state === "started") {return this;}
+    if (this._state === "starting") {return this._starting;}
 
     this._state = "starting";
 
@@ -68,7 +68,7 @@ export default class Client {
   }
 
   async stop(options = {}) {
-    if (this._state === "stopped") return this;
+    if (this._state === "stopped") {return this;}
 
     this._state = "stopping";
 

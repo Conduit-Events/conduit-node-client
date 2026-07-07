@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import Client from "../../src/client/client.js";
-import { RabbitMqConnectionRegistry } from "../../src/transports/rabbitmq/rabbitmq-connection-registry.js";
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL ?? "amqp://localhost";
 
@@ -79,8 +78,6 @@ describe("Client, subscribe later", function () {
       serviceB?.stop?.(),
       publisher?.stop?.(),
     ]);
-
-    await RabbitMqConnectionRegistry.closeAll();
 
     publisher = null;
     serviceA = null;

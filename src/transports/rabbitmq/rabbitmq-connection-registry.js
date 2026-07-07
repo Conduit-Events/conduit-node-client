@@ -49,7 +49,7 @@ export class RabbitMqConnectionRegistry {
   static async release(name = "main", expectedConnection) {
     const record = connections.get(name);
 
-    if (!record) return false;
+    if (!record) {return false;}
 
     // Prevent an old transport from releasing a newer connection that
     // happens to use the same registry name.

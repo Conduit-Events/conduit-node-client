@@ -26,8 +26,8 @@ export class RabbitMqTransport extends Transport {
   }
 
   async connect() {
-    if (this._publishChannel && this._consumeChannel) return;
-    if (this._connecting) return this._connecting;
+    if (this._publishChannel && this._consumeChannel) {return;}
+    if (this._connecting) {return this._connecting;}
 
     this._connecting = this.#connect();
 
@@ -118,7 +118,7 @@ export class RabbitMqTransport extends Transport {
   }
 
   async #releaseRegistryConnection() {
-    if (!this._usesRegistry || !this._registryLeaseActive) return;
+    if (!this._usesRegistry || !this._registryLeaseActive) {return;}
 
     const connection = this._connection;
 
