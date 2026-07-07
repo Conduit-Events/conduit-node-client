@@ -41,8 +41,12 @@ export default class Client {
   }
 
   async start() {
-    if (this._state === "started") {return this;}
-    if (this._state === "starting") {return this._starting;}
+    if (this._state === "started") {
+      return this;
+    }
+    if (this._state === "starting") {
+      return this._starting;
+    }
 
     this._state = "starting";
 
@@ -68,7 +72,9 @@ export default class Client {
   }
 
   async stop(options = {}) {
-    if (this._state === "stopped") {return this;}
+    if (this._state === "stopped") {
+      return this;
+    }
 
     this._state = "stopping";
 
@@ -125,6 +131,14 @@ export default class Client {
   }
 
   async subscribe(type, handler, options = {}) {
+    // Subscirbe is a post start alias for 'on', which is asynchronous and will only complete once the
+    // subscription is ready.
+    if (this._state !== "started") {
+      throw new Error(
+        "Client must be started before subscribe() can activate a subscription. " +
+          "Use on() to register handlers before start().",
+      );
+    }
     const subscription = this.on(type, handler, options);
     await subscription.ready;
     return subscription;
@@ -162,6 +176,7 @@ export default class Client {
       throw new Error("Client emit requires a type");
     }
   }
+
   async #publish(kind, type, data, options = {}) {
     this.#assertStarted();
     this.#assertCanPublish(type);
@@ -177,8 +192,6 @@ export default class Client {
 
     return this.transport.publish(message, {
       routingKey: options.routingKey ?? type,
-      persistent: options.persistent,
-      headers: options.headers,
     });
   }
   #createHandlerContext(message, transportContext = {}) {
