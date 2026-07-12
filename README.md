@@ -670,15 +670,7 @@ It does not automatically restore:
 
 Applications should not yet rely on transparent recovery from broker restarts or network interruptions.
 
-### 5. Lifecycle rollback is not fully hardened
-
-A failed `start()` can leave a connected transport or partially activated subscriptions behind.
-
-A failed `stop()` can leave the client in a transitional state without guaranteed cleanup.
-
-Concurrent or overlapping start, stop, subscribe, and unsubscribe operations have tests for some races, but the complete lifecycle state machine is not yet finalised.
-
-### 6. No strict message ordering guarantee
+### 5. No strict message ordering guarantee
 
 Handlers for one delivered message are sequential, but separate RabbitMQ deliveries may be processed concurrently up to the configured prefetch.
 
@@ -692,11 +684,11 @@ The client does not currently provide:
 
 Consumers that require ordering must enforce it at the application or topology level.
 
-### 7. Limited topic-pattern support
+### 6. Limited topic-pattern support
 
 Only exact routing keys and `#` are supported. RabbitMQ-style partial wildcard patterns using `*` or embedded `#` are rejected.
 
-### 8. Retry behaviour is minimal
+### 7. Retry behaviour is minimal
 
 `requeueOnError: true` performs a RabbitMQ requeue without delay or attempt tracking. A repeatedly failing message can therefore enter a rapid redelivery loop.
 
@@ -709,19 +701,19 @@ The current implementation has no built-in:
 - poison-message detection;
 - dead-letter replay tooling.
 
-### 9. Schemas are local to each client
+### 8. Schemas are local to each client
 
 There is no schema registry, schema distribution, compatibility checking, or contract publication workflow.
 
 Payloads for message types without a registered schema pass payload validation as long as the base envelope is valid.
 
-### 10. Publishing-option boundaries are not final
+### 9. Publishing-option boundaries are not final
 
 The separation between envelope metadata and transport-only publishing options is still being refined.
 
 At the client level, `routingKey` is currently forwarded to the transport. Other transport-specific options such as AMQP headers or persistence should not yet be treated as stable client publishing options.
 
-### 11. Commands have no specialised delivery semantics
+### 10. Commands have no specialised delivery semantics
 
 Commands currently use the same exchange, routing, subscription, acknowledgement, and queue behaviour as events.
 
@@ -734,23 +726,23 @@ The client does not yet provide:
 - response envelopes;
 - command result correlation.
 
-### 12. No idempotency or deduplication
+### 11. No idempotency or deduplication
 
 The envelope contains a unique message ID, but the client does not store processed IDs or prevent duplicate processing.
 
 Consumers must currently implement idempotency themselves.
 
-### 13. No replay or event store
+### 12. No replay or event store
 
 Conduit currently routes messages through RabbitMQ queues. It is not an event store and does not provide historical replay, stream persistence, snapshots, or event-sourcing projections.
 
-### 14. Limited observability
+### 13. Limited observability
 
 Connection and channel errors are currently written directly to `console.error`.
 
 There is no stable logging abstraction, metrics interface, OpenTelemetry integration, health check, or tracing exporter.
 
-### 15. RabbitMQ is the only implemented transport
+### 14. RabbitMQ is the only implemented transport
 
 The transport contract exists, but no alternative transport is currently implemented.
 
