@@ -63,6 +63,7 @@ export class RabbitMqTransport extends Transport {
         throw new AggregateError(
           [connectError, cleanupError],
           "RabbitMQ connection setup failed and cleanup also failed",
+          { cause: cleanupError },
         );
       }
 

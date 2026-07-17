@@ -91,6 +91,7 @@ export default class Client {
         throw new AggregateError(
           [startError, cleanupError],
           "Client startup failed and cleanup also failed",
+          { cause: startError },
         );
       }
 

@@ -52,16 +52,16 @@ export function createFakeTransport({ events = [] } = {}) {
       this.connectCalls += 1;
       events.push("transport.connect");
 
-      if (this.connectError) throw this.connectError;
-      if (this.connectImpl) return this.connectImpl();
+      if (this.connectError) {throw this.connectError;}
+      if (this.connectImpl) {return this.connectImpl();}
     },
 
     async disconnect(options = {}) {
       this.disconnectCalls.push(options);
       events.push("transport.disconnect");
 
-      if (this.disconnectError) throw this.disconnectError;
-      if (this.disconnectImpl) return this.disconnectImpl(options);
+      if (this.disconnectError) {throw this.disconnectError;}
+      if (this.disconnectImpl) {return this.disconnectImpl(options);}
     },
 
     async publish(message, options = {}) {
@@ -72,7 +72,7 @@ export function createFakeTransport({ events = [] } = {}) {
 
       events.push("transport.publish");
 
-      if (this.publishError) throw this.publishError;
+      if (this.publishError) {throw this.publishError;}
       if (this.publishImpl) {
         return this.publishImpl(message, options);
       }
@@ -90,7 +90,7 @@ export function createFakeTransport({ events = [] } = {}) {
       this.subscribeCalls.push(call);
       events.push(`transport.subscribe:${type}`);
 
-      if (this.subscribeError) throw this.subscribeError;
+      if (this.subscribeError) {throw this.subscribeError;}
 
       const runtimeSubscription = this.subscribeImpl
         ? await this.subscribeImpl(call)
@@ -149,8 +149,8 @@ export function createFakeValidator({ events = [] } = {}) {
 
       events.push("validator.validate");
 
-      if (this.validateError) throw this.validateError;
-      if (this.validateImpl) return this.validateImpl(data, type);
+      if (this.validateError) {throw this.validateError;}
+      if (this.validateImpl) {return this.validateImpl(data, type);}
 
       return true;
     },
