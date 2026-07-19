@@ -13,7 +13,7 @@ The current implementation provides a small Node.js API for:
 - sharing RabbitMQ connections between clients in the same Node.js process;
 - acknowledging or rejecting messages according to handler outcomes.
 
-RabbitMQ is the first supported transport. Additional language clients and transport implementations are planned only after the Node.js client and protocol have stabilised.
+RabbitMQ is the first supported transport. The next planned milestone is a minimal Python client and end-to-end cross-language protocol testing. Broader production hardening will follow after the interoperability contract has been exercised by more than one implementation.
 
 ## Current status
 
@@ -151,17 +151,17 @@ const client = Client.create({
 
 ### Top-level options
 
-| Option           | Default                      | Description                                                                                         |
-| ---------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
-| `namespace`      | `"default"`                  | Application or system boundary used when deriving RabbitMQ names.                                   |
-| `service`        | none                         | Logical service name. Required for normal subscriptions unless a queue name is supplied explicitly. |
-| `source`         | `service`                    | Source written to outgoing message metadata.                                                        |
-| `defaultVersion` | `"1.0.0"`                    | Default envelope version.                                                                           |
-| `schemas`        | `{}`                         | Payload schemas or schema aliases keyed by message type.                                            |
-| `rabbitmq`       | `{}`                         | RabbitMQ transport configuration.                                                                   |
-| `transport`      | generated RabbitMQ transport | Advanced dependency-injection override.                                                             |
-| `envelopes`      | generated envelope factory   | Advanced dependency-injection override.                                                             |
-| `validator`      | generated schema validator   | Advanced dependency-injection override.                                                             |
+| Option           | Default                      | Description                                                                               |
+| ---------------- | ---------------------------- | ----------------------------------------------------------------------------------------- |
+| `namespace`      | `"default"`                  | Application or system boundary used when deriving RabbitMQ names.                         |
+| `service`        | none                         | Required logical service name used for client identity and default RabbitMQ queue naming. |
+| `source`         | `service`                    | Source written to outgoing message metadata.                                              |
+| `defaultVersion` | `"1.0.0"`                    | Default envelope version.                                                                 |
+| `schemas`        | `{}`                         | Payload schemas or schema aliases keyed by message type.                                  |
+| `rabbitmq`       | `{}`                         | RabbitMQ transport configuration.                                                         |
+| `transport`      | generated RabbitMQ transport | Advanced dependency-injection override.                                                   |
+| `envelopes`      | generated envelope factory   | Advanced dependency-injection override.                                                   |
+| `validator`      | generated schema validator   | Advanced dependency-injection override.                                                   |
 
 ### RabbitMQ options
 
@@ -265,6 +265,7 @@ Events and commands currently use the same RabbitMQ exchange and routing model. 
 
 ## Message envelope
 
+The canonical language-neutral envelope specification and JSON Schema are documented in [`protocol/`](./protocol/README.md).
 Every published message has the following shape:
 
 ```json
@@ -292,7 +293,7 @@ Every published message has the following shape:
 - `version` defaults to `1.0.0`.
 - `source` defaults to the client service.
 - `streamId` is generated when not supplied.
-- `correlationId` is generated when not supplied.
+- `correlationId` defaults to the new message's `id` when not supplied.
 - `causationId` is optional and normally appears on a message produced while handling another message.
 - `timestamp` is generated as an ISO 8601 date-time string.
 
@@ -436,8 +437,6 @@ const subscription = client.on(
   },
 );
 ```
-
-A service name is not required when the subscription supplies an explicit queue name.
 
 ## Routing
 
@@ -707,11 +706,9 @@ There is no schema registry, schema distribution, compatibility checking, or con
 
 Payloads for message types without a registered schema pass payload validation as long as the base envelope is valid.
 
-### 9. Publishing-option boundaries are not final
+### 9. Publishing options are limited
 
-The separation between envelope metadata and transport-only publishing options is still being refined.
-
-At the client level, `routingKey` is currently forwarded to the transport. Other transport-specific options such as AMQP headers or persistence should not yet be treated as stable client publishing options.
+Envelope metadata and transport-only publishing options are explicitly separated. A custom RabbitMQ `routingKey` is currently supported. Other transport-specific options, such as AMQP headers and persistence overrides, are not yet part of the stable client API.
 
 ### 10. Commands have no specialised delivery semantics
 
@@ -752,28 +749,27 @@ Cross-language compatibility is a design goal, not a completed feature. Python, 
 
 The most important work before a stable release is:
 
-1. Harden failed-start and failed-stop cleanup.
-2. Define lifecycle behaviour during overlapping state transitions.
-3. Remove queue bindings during explicit unsubscribe.
-4. Restore topology and subscriptions after connection loss.
-5. Decide whether local handlers are sequential, parallel, or configurable.
-6. Add a deliberate retry and dead-letter strategy.
-7. Expand topic-pattern support.
-8. Finalise public exports and package versioning.
-9. Add release CI and a standalone licence file.
-10. Build end-to-end cross-language protocol tests.
+1. Remove queue bindings during explicit unsubscribe.
+2. Restore topology and subscriptions after connection loss.
+3. Decide whether local handlers are sequential, parallel, or configurable.
+4. Add a deliberate retry and dead-letter strategy.
+5. Expand topic-pattern support.
+6. Finalise public exports and package versioning.
+7. Build end-to-end cross-language protocol tests.
 
 ## Project structure
 
 ```text
+protocol/
+├── README.md
+└── schemas/
+    └── conduit-message.schema.json
 src/
 ├── client/
 │   └── client.js
 ├── envelope/
 │   └── envelope-factory.js
 ├── schema/
-│   ├── protocol/
-│   │   └── conduit-message.schema.json
 │   └── schema-validator.js
 └── transports/
     ├── transport.js
@@ -802,6 +798,4 @@ Conduit aims to remain:
 
 ## Licence
 
-The package metadata currently declares the project as MIT licensed.
-
-A standalone `LICENSE` file should be included before the first formal release.
+This project is licensed under the [MIT License](./LICENSE).

@@ -5,7 +5,7 @@ import addFormats from "ajv-formats";
 
 // using require from createRequire rather than "import ... with" for node version compatibility
 const require = createRequire(import.meta.url);
-const protocolSchema = require("./protocol/conduit-message.schema.json");
+const protocolSchema = require("../../protocol/schemas/conduit-message.schema.json");
 export class SchemaValidator {
   #ajv;
   #validators;

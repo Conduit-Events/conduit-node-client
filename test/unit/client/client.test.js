@@ -481,6 +481,59 @@ describe("Client", function () {
       });
     });
 
+    it("passes a custom routing key only to the transport", async function () {
+      const { client, transport, envelopes } = createClient();
+
+      await client.start();
+
+      await client.emit(
+        "user.created",
+        {
+          userId: "user_123",
+        },
+        {
+          streamId: "user_123",
+          routingKey: "another.event",
+        },
+      );
+
+      expect(envelopes.createCalls[0].meta).to.deep.equal({
+        kind: "event",
+        type: "user.created",
+        streamId: "user_123",
+      });
+
+      expect(transport.publishCalls[0].options).to.deep.equal({
+        routingKey: "another.event",
+      });
+    });
+
+    it("separates envelope metadata from transport options", async function () {
+      const { client, envelopes, transport } = createClient();
+
+      await client.start();
+
+      await client.emit(
+        "user.created",
+        { userId: "user_123" },
+        {
+          streamId: "user_123",
+          correlationId: "correlation_123",
+          routingKey: "tenant.user.created",
+        },
+      );
+
+      expect(envelopes.createCalls[0].meta).to.deep.equal({
+        kind: "event",
+        type: "user.created",
+        streamId: "user_123",
+        correlationId: "correlation_123",
+      });
+
+      expect(transport.publishCalls[0].options).to.deep.equal({
+        routingKey: "tenant.user.created",
+      });
+    });
     it("does not publish when validation fails", async function () {
       const validator = createFakeValidator();
 

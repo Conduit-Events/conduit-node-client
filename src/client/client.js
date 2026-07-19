@@ -229,18 +229,31 @@ export default class Client {
   async #publish(kind, type, data, options = {}) {
     this.#assertStarted();
     this.#assertCanPublish(type);
+
+    const {
+      routingKey = type,
+      streamId,
+      correlationId,
+      causationId,
+      extensions,
+    } = options;
+
     const message = this.envelopes.create(
       {
         kind,
         type,
-        ...options,
+        streamId,
+        ...(correlationId !== undefined && { correlationId }),
+        ...(causationId !== undefined && { causationId }),
+        ...(extensions !== undefined && { extensions }),
       },
       data,
     );
+
     this.validator.validate(message);
 
     return this.transport.publish(message, {
-      routingKey: options.routingKey ?? type,
+      routingKey,
     });
   }
   #createHandlerContext(message, transportContext = {}) {
