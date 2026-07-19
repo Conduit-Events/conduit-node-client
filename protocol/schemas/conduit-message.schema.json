@@ -1,0 +1,43 @@
+{
+  "$id": "urn:conduit:schema:message:1.0.0",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Conduit Message",
+  "type": "object",
+  "required": ["meta", "data"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": [
+        "id",
+        "kind",
+        "type",
+        "version",
+        "streamId",
+        "correlationId",
+        "timestamp",
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "enum": ["event", "command"] },
+        "type": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "streamId": { "type": "string", "minLength": 1 },
+        "correlationId": { "type": "string", "minLength": 1 },
+        "causationId": { "type": "string", "minLength": 1 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "source": { "type": "string", "minLength": 1 },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}
