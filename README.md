@@ -762,8 +762,10 @@ The most important work before a stable release is:
 ```text
 protocol/
 ├── README.md
-└── schemas/
-    └── conduit-message.schema.json
+├── schemas/
+│   └── conduit-message.schema.json
+└── transports/
+    └── rabbitmq.md
 src/
 ├── client/
 │   └── client.js

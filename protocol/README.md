@@ -383,6 +383,8 @@ The following are outside the scope of this schema:
 
 Transport bindings and conventions should be documented separately from the message-envelope schema.
 
+The RabbitMQ transport's conventions — exchange and queue naming, bindings, dead-letter topology, and AMQP property mapping — are documented in [`transports/rabbitmq.md`](./transports/rabbitmq.md).
+
 ## Validation requirements
 
 Conduit implementations should validate:
