@@ -93,7 +93,12 @@ export class SchemaValidator {
     const valid = validator(data);
 
     if (!valid) {
-      throw new Error(`Invalid ${type}`, validator.errors);
+      const details = this.#ajv.errorsText(validator.errors);
+      const error = new Error(`Invalid ${type}: ${details}`, {
+        cause: validator.errors,
+      });
+      error.errors = validator.errors;
+      throw error;
     }
 
     return true;
