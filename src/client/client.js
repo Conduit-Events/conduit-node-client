@@ -286,8 +286,8 @@ export default class Client {
     return {
       streamId: parentMeta.streamId,
       correlationId: parentMeta.correlationId ?? parentMeta.id,
-      causationId: parentMeta.id,
       ...options,
+      causationId: parentMeta.id,
     };
   }
 
