@@ -754,7 +754,7 @@ There is no stable logging abstraction, metrics interface, OpenTelemetry integra
 
 The transport contract exists, but no alternative transport is currently implemented.
 
-Cross-language compatibility is a design goal, not a completed feature. Python, Elixir, and other clients do not yet exist in this repository.
+Cross-language compatibility is a design goal, not a completed feature yet. A [Python client](https://github.com/Conduit-Events/conduit-python-client) exists as an early scaffold but has no implementation yet; Elixir and other clients don't exist at all.
 
 ## Likely next steps
 
@@ -766,7 +766,7 @@ The most important work before a stable release is:
 4. Add a deliberate retry and dead-letter strategy.
 5. Expand topic-pattern support.
 6. Finalise public exports and package versioning.
-7. Build end-to-end cross-language protocol tests.
+7. Build end-to-end cross-language protocol tests (under way — see `conduit-python-client`).
 
 ## Project structure
 
