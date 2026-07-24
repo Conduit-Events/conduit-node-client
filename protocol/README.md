@@ -4,7 +4,9 @@
 
 This directory defines the language-neutral Conduit message-envelope format.
 
-It currently lives in the Conduit Node Client repository, which acts as the reference implementation. The protocol may later move into a dedicated repository so that Node, Python, and other clients can depend on the same versioned specification.
+> **This copy is not canonical.** The protocol now has its own repository, [`conduit-protocol`](https://github.com/Conduit-Events/conduit-protocol), which is the source of truth for the schema, transport docs, and conformance fixtures. This directory is a duplicated copy kept here only until a real dependency between the two repos is wired up — treat `conduit-protocol` as authoritative, and don't let the two silently drift apart.
+
+The Conduit Node Client acts as the protocol's reference implementation.
 
 The protocol defines the JSON message exchanged between Conduit clients. It does not define RabbitMQ exchanges, queues, routing keys, acknowledgements, retries, or other transport-specific behaviour.
 
