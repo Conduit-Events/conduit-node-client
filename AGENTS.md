@@ -7,6 +7,7 @@ Priorities:
 - Keep the public API small and boring.
 - Prefer explicit message envelopes: { meta, data }.
 - Preserve correlationId, causationId, streamId, source, timestamp, kind, type, version.
+- The canonical protocol spec (schema, transport docs, conformance fixtures) lives in [conduit-protocol](https://github.com/Conduit-Events/conduit-protocol). This repo's `protocol/` directory is a duplicated copy, not the source of truth — check conduit-protocol before treating anything under `protocol/` here as authoritative, and don't let the two silently drift.
 - Do not introduce framework-specific DI requirements.
 - Tests should be readable and focused.
 - Use plain JavaScript unless TypeScript is already present.
