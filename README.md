@@ -392,7 +392,7 @@ The child message inherits:
 - `correlationId` from the parent, or the parent message ID when no correlation ID exists;
 - `causationId` from the parent message ID.
 
-Explicit child options override the inherited values:
+Explicit `streamId` and `correlationId` child options override the inherited values:
 
 ```js
 await ctx.emit(
@@ -403,10 +403,11 @@ await ctx.emit(
   {
     streamId: "custom-stream",
     correlationId: "custom-correlation",
-    causationId: "custom-causation",
   },
 );
 ```
+
+`causationId` cannot be overridden this way. It always identifies the message that directly caused the child to be produced, so it is set to the parent message's ID regardless of any `causationId` passed in options.
 
 The same inheritance rules apply to `ctx.command()`.
 

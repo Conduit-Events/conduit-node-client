@@ -958,7 +958,7 @@ describe("Client", function () {
       );
     });
 
-    it("allows child metadata to override inherited metadata", async function () {
+    it("allows child streamId and correlationId to override inherited metadata", async function () {
       const { client, transport, envelopes } = createClient();
 
       client.on("user.created", async (_message, context) => {
@@ -968,7 +968,6 @@ describe("Client", function () {
           {
             streamId: "custom-stream",
             correlationId: "custom-correlation",
-            causationId: "custom-causation",
           },
         );
       });
@@ -982,8 +981,30 @@ describe("Client", function () {
         type: "child.created",
         streamId: "custom-stream",
         correlationId: "custom-correlation",
-        causationId: "custom-causation",
+        causationId: "parent-message-id",
       });
+    });
+
+    it("does not allow child causationId to override the parent id", async function () {
+      const { client, transport, envelopes } = createClient();
+
+      client.on("user.created", async (_message, context) => {
+        await context.emit(
+          "child.created",
+          {},
+          {
+            causationId: "custom-causation",
+          },
+        );
+      });
+
+      await client.start();
+
+      await transport.subscribeCalls[0].handler(createParentMessage());
+
+      expect(envelopes.createCalls[0].meta.causationId).to.equal(
+        "parent-message-id",
+      );
     });
 
     it("creates child commands with inherited tracing metadata", async function () {
