@@ -618,6 +618,14 @@ Run the RabbitMQ integration suite:
 RABBITMQ_URL=amqp://localhost npm run test:integration
 ```
 
+This needs a running RabbitMQ broker. If you don't already have one, start one with Docker:
+
+```bash
+docker run -d --name conduit-rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4-management
+```
+
+`amqp://localhost` is the default `RABBITMQ_URL` for `test:integration`, so no further configuration is needed once the container is running. The management UI, if you want it, is at `http://localhost:15672` (default login `guest`/`guest`).
+
 The integration suite currently covers:
 
 - communication between multiple clients;
@@ -626,6 +634,8 @@ The integration suite currently covers:
 - fan-out to multiple service queues;
 - child event metadata propagation;
 - shared connection lifecycle behaviour.
+
+CI runs this suite against a RabbitMQ service container on every PR (see `.github/workflows/ci.yml`).
 
 ## Known limitations
 

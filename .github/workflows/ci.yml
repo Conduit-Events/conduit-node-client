@@ -71,3 +71,40 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:unit
+
+  integration-tests:
+    name: Integration tests (RabbitMQ)
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      rabbitmq:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          RABBITMQ_URL: amqp://localhost
